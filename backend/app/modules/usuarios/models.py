@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
+from sqlalchemy import DateTime
 from sqlmodel import SQLModel, Field, Relationship
 
 if TYPE_CHECKING:
@@ -14,6 +15,6 @@ class Usuario(SQLModel, table=True):
     hashed_password: str
     role: str = Field(default="user", max_length=20)
     disabled: bool = False
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True))
 
     pedidos: list["Pedido"] = Relationship(back_populates="usuario")

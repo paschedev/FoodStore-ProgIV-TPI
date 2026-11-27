@@ -39,7 +39,7 @@ class PedidoRead(SQLModel):
     updated_at: datetime
     items: list[DetallePedidoRead]
 
-    # Las fechas se guardan en UTC pero la base las devuelve sin zona horaria
+    # SQLite devuelve las fechas sin zona horaria aunque se guarden en UTC
     @field_validator("created_at", "updated_at")
     @classmethod
     def con_zona_utc(cls, valor: datetime) -> datetime:

@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Literal
-from pydantic import StringConstraints
+from pydantic import StringConstraints, field_validator
 from sqlmodel import SQLModel, Field
 
 FormaPago = Literal["EFECTIVO", "TRANSFERENCIA"]
@@ -38,6 +38,12 @@ class PedidoRead(SQLModel):
     created_at: datetime
     updated_at: datetime
     items: list[DetallePedidoRead]
+
+    # Las fechas se guardan en UTC pero la base las devuelve sin zona horaria
+    @field_validator("created_at", "updated_at")
+    @classmethod
+    def con_zona_utc(cls, valor: datetime) -> datetime:
+        return valor if valor.tzinfo else valor.replace(tzinfo=timezone.utc)
 
 
 class PedidosPaginados(SQLModel):

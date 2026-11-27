@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
+from sqlalchemy import DateTime
 from sqlmodel import SQLModel, Field, Relationship
 
 if TYPE_CHECKING:
@@ -19,8 +20,8 @@ class Pedido(SQLModel, table=True):
     direccion_entrega: str = Field(max_length=200)
     notas: str | None = None
     total: float = 0
-    created_at: datetime = Field(default_factory=ahora)
-    updated_at: datetime = Field(default_factory=ahora)
+    created_at: datetime = Field(default_factory=ahora, sa_type=DateTime(timezone=True))
+    updated_at: datetime = Field(default_factory=ahora, sa_type=DateTime(timezone=True))
 
     usuario: "Usuario" = Relationship(back_populates="pedidos")
     items: list["DetallePedido"] = Relationship(back_populates="pedido")

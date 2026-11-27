@@ -143,7 +143,9 @@ class PedidoService:
 
     def resumen(self) -> ResumenPedidos:
         with self.uow as uow:
+            # Medianoche de la hora local expresada en UTC, igual que las fechas guardadas
             inicio_del_dia = datetime.now().astimezone().replace(hour=0, minute=0, second=0, microsecond=0)
+            inicio_del_dia = inicio_del_dia.astimezone(timezone.utc)
             return ResumenPedidos(
                 pendientes=uow.pedidos.count_by_estado("PENDIENTE"),
                 en_preparacion=uow.pedidos.count_by_estado("EN_PREPARACION"),

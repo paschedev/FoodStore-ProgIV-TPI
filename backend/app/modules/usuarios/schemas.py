@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
-from pydantic import EmailStr, StringConstraints
+from pydantic import EmailStr, StringConstraints, field_validator
 from sqlmodel import SQLModel, Field
 
 
@@ -19,3 +19,8 @@ class UserPublic(SQLModel):
     role: str
     disabled: bool
     created_at: datetime
+
+    @field_validator("created_at")
+    @classmethod
+    def con_zona_utc(cls, valor: datetime) -> datetime:
+        return valor if valor.tzinfo else valor.replace(tzinfo=timezone.utc)

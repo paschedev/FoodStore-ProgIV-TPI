@@ -5,6 +5,8 @@ from app.core.config import settings
 from app.core.database import create_all_tables
 from app.modules.auth.router import router as auth_router
 from app.modules.usuarios.router import router as usuarios_router
+from app.modules.categorias.router import router as categorias_router
+from app.modules.productos.router import router as productos_router
 
 
 @asynccontextmanager
@@ -30,3 +32,5 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(usuarios_router, prefix="/api/v1")
+app.include_router(categorias_router, prefix="/api/v1")
+app.include_router(productos_router, prefix="/api/v1")

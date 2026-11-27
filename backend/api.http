@@ -1,0 +1,346 @@
+@baseUrl = http://127.0.0.1:8000/api/v1
+
+### ==========================================
+### CATÁLOGO PÚBLICO (sin sesión)
+### ==========================================
+
+### 1. Listar categorías activas
+GET {{baseUrl}}/categorias
+
+### 2. Listar productos paginados (skip, limit)
+GET {{baseUrl}}/productos?skip=0&limit=5
+
+### 3. Buscar productos por nombre (sin distinguir mayúsculas)
+GET {{baseUrl}}/productos?search=PIZZA
+
+### 4. Crear categoría sin sesión - Error 401
+POST {{baseUrl}}/categorias
+Content-Type: application/json
+
+{
+  "nombre": "Empanadas"
+}
+
+### ==========================================
+### REGISTRO Y SESIÓN
+### ==========================================
+
+### 5. Registrar usuario (rol user)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "maria",
+  "full_name": "María Gómez",
+  "email": "maria@foodstore.com",
+  "password": "Maria1234!"
+}
+
+### 6. Registrar - Error 409 username repetido
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "maria",
+  "full_name": "Otra María",
+  "email": "otra@foodstore.com",
+  "password": "Maria1234!"
+}
+
+### 7. Registrar - Error 422 contraseña de menos de 8 caracteres
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "pedro",
+  "full_name": "Pedro López",
+  "email": "pedro@foodstore.com",
+  "password": "1234"
+}
+
+### 8. Login - Error 401 credenciales incorrectas
+POST {{baseUrl}}/auth/token
+Content-Type: application/x-www-form-urlencoded
+
+username=maria&password=incorrecta
+
+### 9. Login como María (el JWT viaja en la cookie HttpOnly access_token)
+POST {{baseUrl}}/auth/token
+Content-Type: application/x-www-form-urlencoded
+
+username=maria&password=Maria1234!
+
+### 10. Perfil
+# @name maria
+GET {{baseUrl}}/auth/me
+
+### 11. Crear categoría como user - Error 403
+POST {{baseUrl}}/categorias
+Content-Type: application/json
+
+{
+  "nombre": "Empanadas"
+}
+
+### ==========================================
+### PEDIDOS COMO CLIENTE
+### ==========================================
+
+### 12. Crear pedido (descuenta stock y copia nombre y precio)
+# @name pedido
+POST {{baseUrl}}/pedidos
+Content-Type: application/json
+
+{
+  "items": [
+    { "producto_id": 1, "cantidad": 2 },
+    { "producto_id": 6, "cantidad": 1 }
+  ],
+  "forma_pago": "EFECTIVO",
+  "direccion_entrega": "San Martín 1234, Corrientes",
+  "notas": "Tocar timbre"
+}
+
+### 13. Crear pedido - Error 400 producto repetido
+POST {{baseUrl}}/pedidos
+Content-Type: application/json
+
+{
+  "items": [
+    { "producto_id": 1, "cantidad": 1 },
+    { "producto_id": 1, "cantidad": 1 }
+  ],
+  "forma_pago": "EFECTIVO",
+  "direccion_entrega": "San Martín 1234, Corrientes"
+}
+
+### 14. Crear pedido - Error 400 stock insuficiente (no se guarda nada)
+POST {{baseUrl}}/pedidos
+Content-Type: application/json
+
+{
+  "items": [
+    { "producto_id": 2, "cantidad": 1 },
+    { "producto_id": 3, "cantidad": 9999 }
+  ],
+  "forma_pago": "TRANSFERENCIA",
+  "direccion_entrega": "San Martín 1234, Corrientes"
+}
+
+### 15. Crear pedido - Error 404 producto inexistente
+POST {{baseUrl}}/pedidos
+Content-Type: application/json
+
+{
+  "items": [
+    { "producto_id": 999999, "cantidad": 1 }
+  ],
+  "forma_pago": "EFECTIVO",
+  "direccion_entrega": "San Martín 1234, Corrientes"
+}
+
+### 16. Crear pedido - Error 422 forma de pago inválida y dirección corta
+POST {{baseUrl}}/pedidos
+Content-Type: application/json
+
+{
+  "items": [
+    { "producto_id": 1, "cantidad": 1 }
+  ],
+  "forma_pago": "TARJETA",
+  "direccion_entrega": "Av"
+}
+
+### 17. Mis pedidos
+GET {{baseUrl}}/pedidos
+
+### 18. Detalle del pedido
+GET {{baseUrl}}/pedidos/{{pedido.response.body.$.id}}
+
+### 19. Cambiar estado como user - Error 403
+PATCH {{baseUrl}}/pedidos/{{pedido.response.body.$.id}}/estado
+Content-Type: application/json
+
+{
+  "estado": "EN_PREPARACION"
+}
+
+### 20. Crear un segundo pedido para cancelar
+# @name pedidoCancelar
+POST {{baseUrl}}/pedidos
+Content-Type: application/json
+
+{
+  "items": [
+    { "producto_id": 4, "cantidad": 3 }
+  ],
+  "forma_pago": "TRANSFERENCIA",
+  "direccion_entrega": "Junín 456, Corrientes"
+}
+
+### 21. Cancelar el pedido propio en PENDIENTE (restituye el stock)
+PATCH {{baseUrl}}/pedidos/{{pedidoCancelar.response.body.$.id}}/cancelar
+
+### 22. Cancelar de nuevo - Error 400 (ya no está en PENDIENTE)
+PATCH {{baseUrl}}/pedidos/{{pedidoCancelar.response.body.$.id}}/cancelar
+
+### 23. Resumen como user - Error 403
+GET {{baseUrl}}/pedidos/resumen
+
+### ==========================================
+### ADMINISTRACIÓN (rol admin del seed)
+### ==========================================
+
+### 24. Login como admin
+POST {{baseUrl}}/auth/token
+Content-Type: application/x-www-form-urlencoded
+
+username=admin&password=Admin1234!
+
+### 25. Perfil del admin
+# @name admin
+GET {{baseUrl}}/auth/me
+
+### 26. Crear categoría
+# @name categoria
+POST {{baseUrl}}/categorias
+Content-Type: application/json
+
+{
+  "nombre": "Empanadas",
+  "descripcion": "Empanadas al horno"
+}
+
+### 27. Crear categoría - Error 409 nombre repetido (sin distinguir mayúsculas)
+POST {{baseUrl}}/categorias
+Content-Type: application/json
+
+{
+  "nombre": "empanadas"
+}
+
+### 28. Actualizar categoría (actualización parcial)
+PUT {{baseUrl}}/categorias/{{categoria.response.body.$.id}}
+Content-Type: application/json
+
+{
+  "descripcion": "Empanadas al horno y fritas"
+}
+
+### 29. Crear producto
+# @name producto
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Empanada de Carne",
+  "descripcion": "Carne cortada a cuchillo",
+  "precio_base": 1200,
+  "imagen_url": "",
+  "stock": 100,
+  "categoria_id": {{categoria.response.body.$.id}}
+}
+
+### 30. Crear producto - Error 404 categoría inexistente
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Empanada de Pollo",
+  "precio_base": 1200,
+  "categoria_id": 999999
+}
+
+### 31. Actualizar producto (solo el precio)
+PUT {{baseUrl}}/productos/{{producto.response.body.$.id}}
+Content-Type: application/json
+
+{
+  "precio_base": 1350
+}
+
+### 32. Cambiar stock y disponibilidad
+PATCH {{baseUrl}}/productos/{{producto.response.body.$.id}}/stock
+Content-Type: application/json
+
+{
+  "stock": 80,
+  "disponible": false
+}
+
+### 33. Filtrar productos por categoría y disponibilidad
+GET {{baseUrl}}/productos?categoria_id={{categoria.response.body.$.id}}&disponible=false
+
+### 34. Baja lógica del producto
+DELETE {{baseUrl}}/productos/{{producto.response.body.$.id}}
+
+### 35. Detalle del producto dado de baja - Error 404
+GET {{baseUrl}}/productos/{{producto.response.body.$.id}}
+
+### 36. Baja lógica de la categoría
+DELETE {{baseUrl}}/categorias/{{categoria.response.body.$.id}}
+
+### 37. Todos los pedidos (admin ve todos; filtro por estado)
+GET {{baseUrl}}/pedidos?estado=PENDIENTE
+
+### 38. Avanzar el pedido a EN_PREPARACION
+PATCH {{baseUrl}}/pedidos/{{pedido.response.body.$.id}}/estado
+Content-Type: application/json
+
+{
+  "estado": "EN_PREPARACION"
+}
+
+### 39. Transición inválida EN_PREPARACION -> PENDIENTE - Error 400
+PATCH {{baseUrl}}/pedidos/{{pedido.response.body.$.id}}/estado
+Content-Type: application/json
+
+{
+  "estado": "PENDIENTE"
+}
+
+### 40. Entregar el pedido
+PATCH {{baseUrl}}/pedidos/{{pedido.response.body.$.id}}/estado
+Content-Type: application/json
+
+{
+  "estado": "ENTREGADO"
+}
+
+### 41. Cancelar un pedido entregado (estado terminal) - Error 400
+PATCH {{baseUrl}}/pedidos/{{pedido.response.body.$.id}}/estado
+Content-Type: application/json
+
+{
+  "estado": "CANCELADO"
+}
+
+### 42. Resumen del panel
+GET {{baseUrl}}/pedidos/resumen
+
+### 43. Listar usuarios
+GET {{baseUrl}}/admin/usuarios
+
+### 44. Desactivar la propia cuenta - Error 400
+POST {{baseUrl}}/admin/usuarios/{{admin.response.body.$.id}}/desactivar
+
+### 45. Desactivar a María
+POST {{baseUrl}}/admin/usuarios/{{maria.response.body.$.id}}/desactivar
+
+### 46. Desactivar usuario inexistente - Error 404
+POST {{baseUrl}}/admin/usuarios/999999/desactivar
+
+### 47. Login de María desactivada - Error 400
+POST {{baseUrl}}/auth/token
+Content-Type: application/x-www-form-urlencoded
+
+username=maria&password=Maria1234!
+
+### 48. Activar a María (idempotente: responde 200 aunque ya esté activa)
+POST {{baseUrl}}/admin/usuarios/{{maria.response.body.$.id}}/activar
+
+### 49. Logout
+POST {{baseUrl}}/auth/logout
+
+### 50. Perfil después del logout - Error 401
+GET {{baseUrl}}/auth/me
